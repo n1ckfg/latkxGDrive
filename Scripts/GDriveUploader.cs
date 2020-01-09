@@ -1,27 +1,39 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityGoogleDrive;
 
-public class GDriveUploader : AdaptiveWindowGUI {
+public class GDriveUploader : MonoBehaviour { 
 
-    public string UploadFilePath;
+    public LightningArtist latk;
 
+    private string UploadFilePath;
     private GoogleDriveFiles.CreateRequest request;
     private string result;
+    private bool armUploadFile = false;
 
-    protected override void OnWindowGUI(int windowId) {
-        if (request != null && request.IsRunning) {
-            GUILayout.Label(string.Format("Loading: {0:P2}", request.Progress));
-        } else {
-            UploadFilePath = GUILayout.TextField(UploadFilePath);
-            if (GUILayout.Button("Upload To Root")) Upload(false);
-            if (GUILayout.Button("Upload To AddData")) Upload(true);
+    private void Update() {
+        if (!armUploadFile && latk.isWritingFile) {
+            armUploadFile = true;
         }
 
-        if (!string.IsNullOrEmpty(result)) {
-            GUILayout.TextField(result);
+        if (armUploadFile && !latk.isWritingFile) {
+            UploadFilePath = latk.url;
+            StartCoroutine(doUpload());
+            armUploadFile = false;
+            if (request != null && request.IsRunning) {
+                Debug.Log("Begin GDrive uploading...");
+            }
         }
+    }
+
+    private IEnumerator doUpload() {
+        Upload(false);
+
+        yield return new WaitForSeconds(0f);
+
+        Debug.Log("GDrive upload complete: " + result);
     }
 
     private void Upload(bool toAppData) {
